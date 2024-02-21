@@ -1,0 +1,15 @@
+{
+  "ID": "F0523631B9D64908A8CCD76C52A03DDF",
+  "ActionKeyword": "ff",
+  "Disabled": false,
+  "IsGlobal": false,
+  "Name": "FirefoxSearch",
+  "Author": "TheJhnsn",
+  "Version": "1.0.0",
+  "Language": "csharp",
+  "Website": "",
+  "ExecuteFileName": "Community.PowerToys.Run.Plugin.FirefoxSearch.dll",
+  "IcoPathDark": "Images\\FirefoxSearch.dark.png",
+  "IcoPathLight": "Images\\FirefoxSearch.light.png",
+  "DynamicLoading": true
+}
