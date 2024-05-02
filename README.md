@@ -8,6 +8,6 @@ A plugin for Powertoys Run that searches your Firefox bookmarks and history
 
 ## Usage
 
-1. Open PowerToys Run (Win+Space)
+1. Open PowerToys Run (by default `Alt+Space`)
 2. Type `ff` to search your Firefox bookmarks and history
 3. Select a result to open it in your default browser. Alternatively, copy the title or URL to the clipboard
