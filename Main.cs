@@ -2,6 +2,11 @@
 // The Microsoft Corporation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Linq;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Threading;
 using ManagedCommon;
 using Microsoft.Data.Sqlite;
 using Microsoft.PowerToys.Settings.UI.Library;
@@ -13,7 +18,7 @@ using Wox.Plugin.Logger;
 
 namespace Community.PowerToys.Run.Plugin.FirefoxSearch
 {
-    public class Main : IPlugin, IPluginI18n, IContextMenu, ISettingProvider, IReloadable, IDisposable/*, IDelayedExecutionPlugin*/
+    public class Main : IPlugin, IPluginI18n, IContextMenu, ISettingProvider, IReloadable, IDisposable, IDelayedExecutionPlugin
     {
         private const string Setting = nameof(Setting);
 
@@ -65,6 +70,9 @@ namespace Community.PowerToys.Run.Plugin.FirefoxSearch
                 LIMIT @maxResults
             ",
         ];
+
+        [DllImport("user32.dll")]
+        private static extern bool SetForegroundWindow(IntPtr hWnd);
 
         public IEnumerable<PluginAdditionalOption> AdditionalOptions => new List<PluginAdditionalOption>()
         {
@@ -127,7 +135,16 @@ namespace Community.PowerToys.Run.Plugin.FirefoxSearch
 
             var results = new List<Result>();
 
-            // empty query
+            return results;
+        }
+
+        public List<Result> Query(Query query, bool delayedExecution)
+        {
+            ArgumentNullException.ThrowIfNull(query);
+
+            var results = new List<Result>();
+
+            // Empty query - show plugin name and description
             if (string.IsNullOrEmpty(query.Search))
             {
                 results.Add(new Result
@@ -156,7 +173,7 @@ namespace Community.PowerToys.Run.Plugin.FirefoxSearch
                 using (var db = new SqliteConnection($"Filename={bookmarks}"))
                 {
                     db.Open();
-                    // build and execute query
+                    // Build and execute query
                     SqliteCommand command = new(_sqlQueries[_inclusions], db);
                     command.Parameters.AddWithValue("@search", query.Search);
                     command.Parameters.AddWithValue("@maxResults", _maxResults);
@@ -202,6 +219,22 @@ namespace Community.PowerToys.Run.Plugin.FirefoxSearch
                                         Log.Error($"Could not open {url}", GetType());
                                         return false;
                                     }
+                                    // Add delay to allow Firefox to launch and create its window
+                                    Thread.Sleep(100);
+
+                                    // Find the latest Firefox process
+                                    var firefoxProcesses = Process.GetProcessesByName("firefox");
+                                    if (firefoxProcesses.Any())
+                                    {
+                                        var firefoxProcess = firefoxProcesses
+                                            .OrderByDescending(p => p.StartTime)
+                                            .FirstOrDefault();
+
+                                        if (firefoxProcess != null && firefoxProcess.MainWindowHandle != IntPtr.Zero)
+                                        {
+                                            SetForegroundWindow(firefoxProcess.MainWindowHandle);
+                                        }
+                                    }
                                     return true;
                                 },
                             });
@@ -213,23 +246,7 @@ namespace Community.PowerToys.Run.Plugin.FirefoxSearch
 
             return results;
         }
-        /*
-        // TODO: return delayed query results?
-        public List<Result> Query(Query query, bool delayedExecution)
-        {
-            ArgumentNullException.ThrowIfNull(query);
 
-            var results = new List<Result>();
-
-            // empty query
-            if (string.IsNullOrEmpty(query.Search))
-            {
-                return results;
-            }
-
-            return results;
-        }
-        */
         public void Init(PluginInitContext context)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
